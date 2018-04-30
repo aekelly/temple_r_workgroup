@@ -1,0 +1,264 @@
+---
+title: "A Markdown Tutorial"
+author: "Jeff Antsen"
+date: "3/15/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#@ this is where you can set the defaults for your chunks.
+#@ so, say, if you want the default ot echo to be FALSE, here is where you do it.
+#@ include=F here means that this chunk will not be included in the final .html doc
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+#Now for some other features:
+Code comes in chunks, which can be interspersed with text
+
+```{r}
+a <- 1
+b <- 2
+c <- 3
+abc <- c(a,b,c)
+abc
+#rm(list=ls())
+abc
+```
+
+
+```{r}
+profane <- read.csv("data/profane.csv")
+head(profane)
+summary(profane)
+
+abc
+
+```
+#Helpful Links
+>Here's some stuff you might want to look at, while learning _R Markdown_:  
+1. *a hilariously complicated cheat sheet *  
+<https://www.rstudio.com/wp-content/uploads/2016/03/rmarkdown-cheatsheet-2.0.pdf>  
+2. **slightly confusing step-by-step**  
+<https://rmarkdown.rstudio.com/lesson-1.html>  
+3. using KnitR, the program? which renders your file  
+<http://kbroman.org/knitr_knutshell/pages/Rmarkdown.html>  
+4. _and a cute youtube video_ 
+<https://www.youtube.com/watch?v=DNS7i2m4sB0>  
+Using two spaces between lines in text-regions starts a new paragraph, which can be annoying when you forget.  
+
+
+
+
+#Same Functionality
+Here's a copy of what we did in our last session:
+First, we don't want to re-install packages every time,
+so we change the .rmd default from eval=T to eval=F
+Then, when the .rmd file is knit, this chunk will not be evaluated.
+```{r, eval=F}
+install.packages("reshape2")
+install.packages("dplyr")
+install.packages("tidyverse")
+install.packages("ggplot")
+```
+and (look at the .rmd) you can hide the code of the next two chunks with echo=F  
+the chunk below is neither evaluated nor shown, but check the .rmd file
+```{r, eval=F, echo=F}
+#@ this chunk is a repeat of the previous one, neither evaluated (eval=F) nor shown (echo=F)
+install.packages("reshape2")
+install.packages("dplyr")
+install.packages("tidyverse")
+install.packages("ggplot")
+```
+
+
+```{r echo=F}
+#@ this chunk is new, and the code is also hidden thought it is evaluated.  
+#@ You still see the results in the Knit html doc
+require(ggplot2)
+require(dplyr)
+require(reshape2)
+require(tidyverse)
+
+linear.df <- read.csv("data/linear.csv", header=T)
+
+head(linear.df)
+
+colnames(linear.df)
+linmelt <- linear.df %>% melt(measure.var=c(15:54), id.var=c(2,7,9))
+#linmelt
+#visualizing large objects in the knit file can be very ponderous - try removing the # on the linmelt line, and re-knitting!  ouch.
+```
+
+#back to the chunk defaults
+```{r}
+lms <- mutate(linmelt, time=substr(variable, start=4, stop=5))
+table(lms$time)
+
+
+
+lms$time<-as.numeric(lms$time)
+table(lms$Cond)
+dim(lms)
+colnames(lms)
+rownames(head(lms))
+
+
+length(unique(lms$Subject))
+table(lms[lms$Subject==2,]$variable)
+
+?unique()
+```
+Keeping chunks small makes it easy to evaluate them one by one.  
+It also helps if you want to toggle default settings like echo between chunks.
+```{r collapse=T, message=F}
+lincond <- group_by(lms, Cond, time)
+lincond <- summarize(lincond, mean=mean(value, na.rm=T))
+lincond
+str(lincond)
+```
+###Sometimes all you want is a nice graph
+```{r echo=F, message=F}
+require(ggplot2)
+ggplot(data=lincond, aes(x=time, y=mean, color=Cond)) +
+  geom_smooth(fill=NA)+
+  geom_point()
+```
+  
+...that was nice.
+```{r}
+```
+#####Message=F is great
+When you don't want to see random console output (like methods r is employing).  
+The spacing above was acting strangely, hence the empty chunk.  RMarkdown is a strange beast.
+```{r message=F}
+# Setting working directory (we don't need to do this)
+###@ setwd("c:/data/downloads/")
+###@ setwd("C:/Users/klugman/Dropbox/r/data")
+# Reading in data
+linear<-read.csv("data/linear.csv", header=T)
+
+# Installing formatR package to do RMarkdown
+# have to choose 0-Cloud mirror for lab computers
+chooseCRANmirror(ind=1)
+install.packages("formatR")
+library(formatR)
+library(dplyr)
+library(reshape2)
+library(tidyverse)
+library(ggplot2)
+
+
+# converting linear to tbl
+linear<-as.tbl(linear)
+
+# looking at data
+head(linear)
+linear
+
+# creating vector of bin variable names
+linnames=colnames(linear)[15:54]
+```
+the chunk just above is collapsed
+
+
+```{r}
+# reshaping data
+# "linear" is a subject*word*decisecond dataset, there are 22 subjects, 49 words, and 40 deciseconds per subject*word
+# "binxx" variables contain data on pupil diameter
+# there are four categories of words ("Cond"): Profane, Technical, Non-Word, Neutral
+# we are reshaping so there are now 49*40 lines per subject
+linmelt<-melt(linear, id.vars=c("ID", "Subject", "Item", "Cond"), measure.vars=linnames)
+
+# creating clock variable that just contains numerals 1-40 (as opposed to "Bin1", "Bin2", etc)
+linmelt<-mutate(linmelt, time=substr(variable, start=4, stop=5))
+linmelt$time<-as.numeric(linmelt$time)
+
+# Tracing pupil diameters over time for each profane word
+ggplot(linmelt[linmelt$Cond=="Profane",], aes(x=time, y=value, color=Item))+
+  geom_smooth(fill=NA)
+
+
+# collapsing the dataset to average across all subjects and words within condition*time
+# so we will have a dataset that is 40 lines per condition, for a total of 160 lines
+lincond<-group_by(linmelt, Cond, time)
+lincond<-summarize(lincond, mean=mean(value, na.rm=T))
+lincond
+```
+
+
+
+#no echo 
+```{r echo=F}
+# plotting average pupil length by time for each condition
+ggplot(data=lincond, aes(x=time, y=mean, color=Cond))+
+  geom_smooth(fill=NA)+
+  geom_point()
+```
+
+
+
+*here's some* **other** *code using some other data*
+
+#A Very Tiny Time Series
+plotting for for a friend
+```{r ethans_chunk}
+
+require(reshape2)
+require(ggplot2)
+
+
+# setwd("~/Box Sync/TEMPLE/WBCA/R stuff/for_friends/")
+#no more working directories!
+
+ethan2 <-  read.csv("data/NAEPdata.csv", header=T)
+ethan <- ethan2
+
+years <-c("score", 1998, 2006, 2010, 2014)
+colnames(ethan) <- years
+
+levels(ethan$score)
+#ethan$score <- reorder(ethan$score, new.order=c(3,2,4,1))  
+#@ this doesn't work At All.  
+#@I think it actually reorders which observation GETS which factor, not their relative ranking
+#@ ----- Is there a way to re-order factors from their alphabetical default?
+
+levels(ethan$score)
+
+ethanL <- melt(ethan, id.vars="score")
+ethanL
+colnames(ethanL) <- c("score", "year", "value")
+
+
+
+eplot <- ggplot(data=ethanL, aes(x=year, y=value, group=score, color=score), main="Proficiency by year")+geom_point()+geom_line()
+
+eplot + labs(title="Student Proficiency by Year")
+```
+
+#that's all folks
+
+
+
